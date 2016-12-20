@@ -1,7 +1,24 @@
 # Release notes
 
+**0.6.5-0.6.6**
+
+* fixed bugs with `@IsUrl`, `@IsEmail` and several other decorators
+
+**0.6.4**
+
+* added `@IsMilitaryTime` decorator.
+
+**0.6.3**
+
+* added `validateOrReject` method which rejects promise instead of returning array of errors in resolved result
+
+**0.6.1**
+
+* added `@IsArray` decorator.
+
 **0.6.0**
 
+* added `@ValidateIf` decorator, see conditional validation in docs.
 * breaking change with `@ValidateNested` on arrays: Validator now groups the validation errors by sub-object, rather than them all being grouped together. See #32 for a demonstration of the updated structure.
 
 **0.5.0**

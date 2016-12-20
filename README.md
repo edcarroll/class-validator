@@ -135,7 +135,7 @@ In our case, when we validated a Post object, we have such array of ValidationEr
 If you don't want a `target` to be exposed in validation errors, there is a special option when you use validator:
 
 ```typescript
-validator.validate(post, { error: { target: false } });
+validator.validate(post, { validationError: { target: false } });
 ```
 
 This is especially useful when you send errors back over http, and you most probably don't want to expose
@@ -245,6 +245,59 @@ export class Post {
 
 }
 ```
+
+## Inheriting Validation decorators
+
+When you define a subclass which extends from another one, the subclass will automatically inherit the parent's decorators.
+```typescript
+import {validate} from "class-validator";
+
+class BaseContent {
+
+    @IsEmail()
+    email: string;
+}
+
+class Post extends BaseContent {
+
+    @MinLength(10)
+    @MaxLength(20)
+    title: string;
+
+    @Contains("hello")
+    text: string;
+}
+
+let post = new Post();
+post.email = "invalid email";  // inherited property
+post.title = "not valid";
+post.text = "helo";
+
+validate(post).then(errors => {
+    // ...
+});  // it will return errors for email, title and text properties
+
+```
+
+## Conditional validation
+
+The conditional validation decorator (`@ValidateIf`) can be used to ignore the validators on a property when the provided condition function returns false. The condition function takes the object being validated and must return a `boolean`.
+
+```typescript
+import {ValidateIf, IsNotEmpty} from "class-validator";
+
+export class Post {
+    otherProperty:string;
+    
+    @ValidateIf(o => o.otherProperty === "value")
+    @IsNotEmpty()
+    example:string;
+}
+```
+
+In the example above, the validation rules applied to `example` won't be run unless the object's `otherProperty` is `"value"`.
+
+Note that when the condition is false all validation decorators are ignored, including `isDefined`.
 
 ## Skipping missing properties
 
@@ -548,6 +601,7 @@ validator.isNotIn(value, possibleValues); // Checks if given value not in a arra
 validator.isBoolean(value); // Checks if a given value is a real boolean.
 validator.isDate(value); // Checks if a given value is a real date.
 validator.isString(value); // Checks if a given value is a real string.
+validator.isArray(value); // Checks if a given value is an array.
 validator.isNumber(value); // Checks if a given value is a real number.
 validator.isInt(value); // Checks if value is an integer.
 
@@ -601,6 +655,7 @@ validator.length(str, min, max); // Checks if the string's length falls in a ran
 validator.minLength(str, min); // Checks if the string's length is not less than given number.
 validator.maxLength(str, max); // Checks if the string's length is not more than given number.
 validator.matches(str, pattern, modifiers); // Checks if string matches the pattern. Either matches('foo', /foo/i) or matches('foo', 'foo', 'i').
+validator.isMilitaryTime(str); // Checks if the string is a valid representation of military time in the format HH:MM.
 
 // array validation methods
 validator.arrayContains(array, values); // Checks if array contains all values from the given array of values.
@@ -629,6 +684,7 @@ validator.arrayUnique(array); // Checks if all array's values are unique. Compar
 | `@IsString()`                                   | Checks if the string is a string.                                                                                                |
 | `@IsNumber()`                                   | Checks if the string is a number.                                                                                                |
 | `@IsInt()`                                      | Checks if the value is an integer number.                                                                                        |
+| `@IsArray()`                                    | Checks if the string is an array                                                                                                 |
 | **Number validation decorators**                                                                                                                                                   |
 | `@IsDivisibleBy(num: number)`                   | Checks if the value is a number that's divisible by another.                                                                     |
 | `@IsPositive()`                                 | Checks if the value is a positive number.                                                                                        |
@@ -676,7 +732,8 @@ validator.arrayUnique(array); // Checks if all array's values are unique. Compar
 | `@Length(min: number, max?: number)`            | Checks if the string's length falls in a range.                                                                                  |
 | `@MinLength(min: number)`                       | Checks if the string's length is not less than given number.                                                                     |
 | `@MaxLength(max: number)`                       | Checks if the string's length is not more than given number.                                                                     |
-| `@Matches(pattern: RegExp, modifiers?: string)` | Checks if string matches the pattern. Either matches('foo', /foo/i) or matches('foo', 'foo', 'i').                               |
+| `@Matches(pattern: RegExp, modifiers?: string)` | Checks if string matches the pattern. Either matches('foo', /foo/i) or matches('foo', 'foo', 'i').
+| `@IsMilitaryTime()`                             | Checks if the string is a valid representation of military time in the format HH:MM.
 | **Array validation decorators**                                                                                                                                                    |
 | `@ArrayContains(values: any[])`                 | Checks if array contains all values from the given array of values.                                                              |
 | `@ArrayNotContains(values: any[])`              | Checks if array does not contain any of the given values.                                                                        |

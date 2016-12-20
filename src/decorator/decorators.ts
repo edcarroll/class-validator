@@ -63,6 +63,22 @@ export function ValidateNested(validationOptions?: ValidationOptions) {
     };
 }
 
+/**
+ * Objects / object arrays marked with this decorator will also be validated.
+ */
+export function ValidateIf(condition: (object: any, value: any) => boolean, validationOptions?: ValidationOptions) {
+    return function (object: Object, propertyName: string) {
+        const args: ValidationMetadataArgs = {
+            type: ValidationTypes.CONDITIONAL_VALIDATION,
+            target: object.constructor,
+            propertyName: propertyName,
+            constraints: [condition],
+            validationOptions: validationOptions
+        };
+        getFromContainer(MetadataStorage).addValidationMetadata(new ValidationMetadata(args));
+    };
+}
+
 // -------------------------------------------------------------------------
 // Common checkers
 // -------------------------------------------------------------------------
@@ -247,6 +263,21 @@ export function IsString(validationOptions?: ValidationOptions) {
     return function (object: Object, propertyName: string) {
         const args: ValidationMetadataArgs = {
             type: ValidationTypes.IS_STRING,
+            target: object.constructor,
+            propertyName: propertyName,
+            validationOptions: validationOptions
+        };
+        getFromContainer(MetadataStorage).addValidationMetadata(new ValidationMetadata(args));
+    };
+}
+
+/**
+ * Checks if a value is an array.
+ */
+export function IsArray(validationOptions?: ValidationOptions) {
+    return function (object: Object, propertyName: string) {
+        const args: ValidationMetadataArgs = {
+            type: ValidationTypes.IS_ARRAY,
             target: object.constructor,
             propertyName: propertyName,
             validationOptions: validationOptions
@@ -557,7 +588,7 @@ export function IsCurrency(options?: IsCurrencyOptions, validationOptions?: Vali
             type: ValidationTypes.IS_CURRENCY,
             target: object.constructor,
             propertyName: propertyName,
-            validationTypeOptions: options,
+            constraints: [options],
             validationOptions: validationOptions
         };
         getFromContainer(MetadataStorage).addValidationMetadata(new ValidationMetadata(args));
@@ -573,7 +604,7 @@ export function IsEmail(options?: IsEmailOptions, validationOptions?: Validation
             type: ValidationTypes.IS_EMAIL,
             target: object.constructor,
             propertyName: propertyName,
-            validationTypeOptions: options,
+            constraints: [options],
             validationOptions: validationOptions
         };
         getFromContainer(MetadataStorage).addValidationMetadata(new ValidationMetadata(args));
@@ -589,7 +620,7 @@ export function IsFQDN(options?: IsFQDNOptions, validationOptions?: ValidationOp
             type: ValidationTypes.IS_FQDN,
             target: object.constructor,
             propertyName: propertyName,
-            validationTypeOptions: options,
+            constraints: [options],
             validationOptions: validationOptions
         };
         getFromContainer(MetadataStorage).addValidationMetadata(new ValidationMetadata(args));
@@ -939,6 +970,21 @@ export function Matches(pattern: RegExp, modifiersOrAnnotationOptions?: string|V
             target: object.constructor,
             propertyName: propertyName,
             constraints: [pattern, modifiers],
+            validationOptions: validationOptions
+        };
+        getFromContainer(MetadataStorage).addValidationMetadata(new ValidationMetadata(args));
+    };
+}
+
+/**
+ * Checks if the string correctly represents a time in the format HH:MM 
+ */
+export function IsMilitaryTime(validationOptions?: ValidationOptions) {
+    return function (object: Object, propertyName: string) {
+        const args: ValidationMetadataArgs = {
+            type: ValidationTypes.IS_MILITARY_TIME,
+            target: object.constructor,
+            propertyName: propertyName,
             validationOptions: validationOptions
         };
         getFromContainer(MetadataStorage).addValidationMetadata(new ValidationMetadata(args));

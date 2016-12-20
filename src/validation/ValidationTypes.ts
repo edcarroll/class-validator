@@ -8,6 +8,7 @@ export class ValidationTypes {
     /* system */
     static CUSTOM_VALIDATION = "customValidation";
     static NESTED_VALIDATION = "nestedValidation";
+    static CONDITIONAL_VALIDATION = "conditionalValidation";
 
     /* common checkers */
     static IS_DEFINED = "isDefined";
@@ -23,6 +24,7 @@ export class ValidationTypes {
     static IS_DATE = "isDate";
     static IS_NUMBER = "isNumber";
     static IS_STRING = "isString";
+    static IS_ARRAY = "isArray";
     static IS_INT = "isInt";
 
     /* number checkers */
@@ -75,6 +77,7 @@ export class ValidationTypes {
     static MIN_LENGTH = "minLength";
     static MAX_LENGTH = "maxLength";
     static MATCHES = "matches";
+    static IS_MILITARY_TIME = "isMilitaryTime";
 
     /* array checkers */
     static ARRAY_CONTAINS = "arrayContains";
@@ -127,6 +130,8 @@ export class ValidationTypes {
                 return eachPrefix + "$property must be an integer number";
             case this.IS_STRING:
                 return eachPrefix + "$property must be a string";
+            case this.IS_ARRAY:
+                return eachPrefix + "$property must be an array";
 
             /* number checkers */
             case this.IS_DIVISIBLE_BY:

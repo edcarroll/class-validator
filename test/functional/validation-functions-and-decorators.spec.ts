@@ -46,6 +46,7 @@ import {
     Min,
     Max,
     IsNotEmpty,
+    IsMilitaryTime,
     ArrayNotEmpty,
     ArrayMinSize,
     ArrayMaxSize,
@@ -59,7 +60,8 @@ import {
     NotContains,
     ArrayContains,
     ArrayNotContains,
-    ArrayUnique
+    ArrayUnique,
+    IsArray
 } from "../../src/decorator/decorators";
 import {Validator} from "../../src/validation/Validator";
 import {ValidatorOptions} from "../../src/validation/ValidatorOptions";
@@ -559,6 +561,47 @@ describe("IsString", function() {
     it("should return error object with proper data", function(done) {
         const validationType = "isString";
         const message = "someProperty must be a string";
+        checkReturnedError(new MyClass(), invalidValues, validationType, message, done);
+    });
+
+});
+
+describe("IsArray", function() {
+
+    const validValues = [[], [1, 2, 3], [0, 0, 0], [""], [0], [undefined], [{}], new Array()];
+    const invalidValues = [
+        true,
+        false,
+        1,
+        {},
+        null,
+        undefined
+    ];
+
+    class MyClass {
+        @IsArray()
+        someProperty: string[];
+    }
+
+    it("should not fail if validator.validate said that its valid", function(done) {
+        checkValidValues(new MyClass(), validValues, done);
+    });
+
+    it("should fail if validator.validate said that its invalid", function(done) {
+        checkInvalidValues(new MyClass(), invalidValues, done);
+    });
+
+    it("should not fail if method in validator said that its valid", function() {
+        validValues.forEach(value => validator.isArray(value).should.be.true);
+    });
+
+    it("should fail if method in validator said that its invalid", function() {
+        invalidValues.forEach(value => validator.isArray(value as any).should.be.false);
+    });
+
+    it("should return error object with proper data", function(done) {
+        const validationType = "isArray";
+        const message = "someProperty must be an array";
         checkReturnedError(new MyClass(), invalidValues, validationType, message, done);
     });
 
@@ -2730,6 +2773,30 @@ describe("Matches", function() {
         const validationType = "matches";
         const message = "someProperty must match " + constraint + " regular expression";
         checkReturnedError(new MyClass(), invalidValues, validationType, message, done);
+    });
+
+});
+
+describe("IsMilitaryTime", function() {
+
+    class MyClass {
+        @IsMilitaryTime()
+        someProperty: string;
+    }
+
+    it("should not fail for a valid time in the format HH:MM", function(done) {
+        const validValues = ["10:22", "12:03", "16:32", "23:59", "00:00"];
+        checkValidValues(new MyClass(), validValues, done);
+    });
+
+    it("should fail for invalid time format", function(done) {
+        const invalidValues = ["23:61", "25:00", "08:08 pm", "04:00am"];
+        checkInvalidValues(new MyClass(), invalidValues, done);
+    });
+
+    it("should fail for invalid values", function(done) {
+        const invalidValues = [undefined, null, "23:00 and invalid counterpart"];
+        checkInvalidValues(new MyClass(), invalidValues, done);
     });
 
 });

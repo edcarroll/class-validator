@@ -17,6 +17,24 @@ export class Validator {
 
     private validatorJs = require("validator");
 
+    /**
+     * Performs validation of the given object based on decorators or validation schema.
+     * Common method for `validateOrReject` and `validate` methods.
+     */
+    private coreValidate(objectOrSchemaName: Object|string, objectOrValidationOptions: Object|ValidationOptions, maybeValidatorOptions?: ValidatorOptions): Promise<ValidationError[]> {
+        const object = typeof objectOrSchemaName === "string" ? objectOrValidationOptions as Object : objectOrSchemaName as Object;
+        const options = typeof objectOrSchemaName === "string" ? maybeValidatorOptions : objectOrValidationOptions as ValidationOptions;
+        const schema = typeof objectOrSchemaName === "string" ? objectOrSchemaName as string : undefined;
+
+        const executor = new ValidationExecutor(this, options);
+        const validationErrors: ValidationError[] = [];
+        executor.execute(object, schema, validationErrors);
+
+        return Promise.all(executor.awaitingPromises).then(() => {
+            return executor.stripEmptyErrors(validationErrors);
+        });
+    }
+
     // -------------------------------------------------------------------------
     // Public Methods
     // -------------------------------------------------------------------------
@@ -35,17 +53,25 @@ export class Validator {
      * Performs validation of the given object based on decorators or validation schema.
      */
     validate(objectOrSchemaName: Object|string, objectOrValidationOptions: Object|ValidationOptions, maybeValidatorOptions?: ValidatorOptions): Promise<ValidationError[]> {
-        const object = typeof objectOrSchemaName === "string" ? objectOrValidationOptions as Object : objectOrSchemaName as Object;
-        const options = typeof objectOrSchemaName === "string" ? maybeValidatorOptions : objectOrValidationOptions as ValidationOptions;
-        const schema = typeof objectOrSchemaName === "string" ? objectOrSchemaName as string : undefined;
+        return this.coreValidate(objectOrSchemaName, objectOrValidationOptions, maybeValidatorOptions);
+    }
 
-        const executor = new ValidationExecutor(this, options);
-        const validationErrors: ValidationError[] = [];
-        executor.execute(object, schema, validationErrors);
+    /**
+     * Performs validation of the given object based on decorators used in given object class and reject on error.
+     */
+    validateOrReject(object: Object, options?: ValidatorOptions): Promise<void>;
 
-        return Promise.all(executor.awaitingPromises).then(() => {
-            return executor.stripEmptyErrors(validationErrors);
-        });
+    /**
+     * Performs validation of the given object based on validation schema and reject on error.
+     */
+    validateOrReject(schemaName: string, object: Object, options?: ValidatorOptions): Promise<void>;
+
+    /**
+     * Performs validation of the given object based on decorators or validation schema and reject on error.
+     */
+    validateOrReject(objectOrSchemaName: Object|string, objectOrValidationOptions: Object|ValidationOptions, maybeValidatorOptions?: ValidatorOptions): Promise<void> {
+        return this.coreValidate(objectOrSchemaName, objectOrValidationOptions, maybeValidatorOptions)
+            .then((validationErorrs: ValidationError[]) => (validationErorrs.length > 0) ? Promise.reject(validationErorrs) : Promise.resolve());
     }
     
     /**
@@ -102,6 +128,8 @@ export class Validator {
                 return this.isDate(value);
             case ValidationTypes.IS_STRING:
                 return this.isString(value);
+            case ValidationTypes.IS_ARRAY:
+                return this.isArray(value);
             case ValidationTypes.IS_NUMBER:
                 return this.isNumber(value);
             case ValidationTypes.IS_INT:
@@ -151,11 +179,11 @@ export class Validator {
             case ValidationTypes.IS_CREDIT_CARD:
                 return this.isCreditCard(value);
             case ValidationTypes.IS_CURRENCY:
-                return this.isCurrency(value, metadata.validationTypeOptions);
+                return this.isCurrency(value, metadata.constraints[0]);
             case ValidationTypes.IS_EMAIL:
-                return this.isEmail(value, metadata.validationTypeOptions);
+                return this.isEmail(value, metadata.constraints[0]);
             case ValidationTypes.IS_FQDN:
-                return this.isFQDN(value, metadata.validationTypeOptions);
+                return this.isFQDN(value, metadata.constraints[0]);
             case ValidationTypes.IS_FULL_WIDTH:
                 return this.isFullWidth(value);
             case ValidationTypes.IS_HALF_WIDTH:
@@ -187,7 +215,7 @@ export class Validator {
             case ValidationTypes.IS_SURROGATE_PAIR:
                 return this.isSurrogatePair(value);
             case ValidationTypes.IS_URL:
-                return this.isURL(value, metadata.validationTypeOptions);
+                return this.isURL(value, metadata.constraints[0]);
             case ValidationTypes.IS_UUID:
                 return this.isUUID(value, metadata.constraints[0]);
             case ValidationTypes.IS_UPPERCASE:
@@ -200,6 +228,8 @@ export class Validator {
                 return this.maxLength(value, metadata.constraints[0]);
             case ValidationTypes.MATCHES:
                 return this.matches(value, metadata.constraints[0], metadata.constraints[1]);
+            case ValidationTypes.IS_MILITARY_TIME:
+                return this.isMilitaryTime(value);
 
             /* array checkers */
             case ValidationTypes.ARRAY_CONTAINS:
@@ -297,6 +327,13 @@ export class Validator {
     }
 
     /**
+     * Checks if a given value is an array
+     */
+    isArray(value: any): boolean {
+        return value instanceof Array;
+    }
+
+    /**
      * Checks if a given value is a real number.
      */
     isNumber(value: any): boolean {
@@ -307,6 +344,9 @@ export class Validator {
      * Checks if value is an integer.
      */
     isInt(val: number): boolean {
+        if (!this.isNumber(val))
+            return false;
+
         const numberString = String(val); // fix it
         return this.validatorJs.isInt(numberString);
     }
@@ -665,6 +705,14 @@ export class Validator {
      */
     matches(value: string, pattern: RegExp, modifiers?: string): boolean {
         return typeof value === "string" && this.validatorJs.matches(value, pattern, modifiers);
+    }
+
+    /**
+     * Checks if the string represents a time without a given timezone in the format HH:MM (military)
+     * If the given value does not match the pattern HH:MM, then it returns false.
+     */
+    isMilitaryTime(value: string): boolean {
+        return this.matches(value, /^([01]\d|2[0-3]):?([0-5]\d)$/);
     }
     
     // -------------------------------------------------------------------------
