@@ -39,7 +39,7 @@ export class ValidationExecutor {
     // Public Methods
     // -------------------------------------------------------------------------
     
-    execute(object: Object, targetSchema: string, validationErrors: ValidationError[]) {
+    execute(object: Object, context: any, targetSchema: string, validationErrors: ValidationError[]) {
         const groups = this.validatorOptions ? this.validatorOptions.groups : undefined;
         const targetMetadatas = this.metadataStorage.getTargetValidationMetadatas(object.constructor, targetSchema, groups);
         const groupedMetadatas = this.metadataStorage.groupByPropertyName(targetMetadatas);
@@ -68,8 +68,8 @@ export class ValidationExecutor {
             }
 
             this.defaultValidations(object, value, metadatas, validationError.constraints);
-            this.customValidations(object, value, customValidationMetadatas, validationError.constraints);
-            this.nestedValidations(value, nestedValidationMetadatas, validationError.children);
+            this.customValidations(object, value, context, customValidationMetadatas, validationError.constraints);
+            this.nestedValidations(value, context, nestedValidationMetadatas, validationError.children);
         });
     }
 
@@ -148,6 +148,7 @@ export class ValidationExecutor {
 
     private customValidations(object: Object,
                               value: any,
+                              context: any,
                               metadatas: ValidationMetadata[],
                               errorMap: { [key: string]: string }) {
         metadatas.forEach(metadata => {
@@ -162,7 +163,8 @@ export class ValidationExecutor {
                         property: metadata.propertyName,
                         object: object,
                         value: value,
-                        constraints: metadata.constraints
+                        constraints: metadata.constraints,
+                        context: context
                     };
                     const validatedValue = customConstraintMetadata.instance.validate(value, validationArguments);
                     if (validatedValue instanceof Promise) {
@@ -183,7 +185,7 @@ export class ValidationExecutor {
         });
     }
     
-    private nestedValidations(value: any, metadatas: ValidationMetadata[], errors: ValidationError[]) {
+    private nestedValidations(value: any, context: any, metadatas: ValidationMetadata[], errors: ValidationError[]) {
         metadatas.forEach(metadata => {
             if (metadata.type !== ValidationTypes.NESTED_VALIDATION) return;
             const targetSchema = typeof metadata.target === "string" ? metadata.target as string : undefined;
@@ -193,11 +195,11 @@ export class ValidationExecutor {
                     const validationError = this.generateValidationError(value, subValue, index.toString());
                     errors.push(validationError);
 
-                    this.execute(subValue, targetSchema, validationError.children);
+                    this.execute(subValue, context, targetSchema, validationError.children);
                 });
 
             } else if (value instanceof Object) {
-                this.execute(value, targetSchema, errors);
+                this.execute(value, context, targetSchema, errors);
 
             } else {
                 throw new Error("Only objects and arrays are supported to nested validation");

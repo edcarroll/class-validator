@@ -36,4 +36,8 @@ export interface ValidatorOptions {
 
     };
 
+    /**
+     * Context passed to validators.
+     */
+    context?: any;
 }
